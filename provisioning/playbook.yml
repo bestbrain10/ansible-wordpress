@@ -6,11 +6,17 @@
       ping:
     - name: Add the ondrej PHP PPA
       apt_repository: repo='ppa:ondrej/php'
+    - name: Add the DeadSnakes PPA
+      apt_repository: repo='ppa:deadsnakes/ppa'
     - name: Update the apt cache
       apt: update_cache=yes cache_valid_time=3600
-    - name: Install PHP
+    - name: Install PHP and python3
       apt: 
         name: 
+        - python3.9
+        - python3-setuptools
+        - python-setuptools
+        - python3-pip
         - php
         - php-fpm
         - php-mysql
@@ -23,7 +29,10 @@
         name:
         - mysql-server-5.7 
         - python-mysqldb
-        - PyMySQL
+    - name: Install requisite Python Package for MYSQL
+      pip: 
+        name: PyMySQL
+        executable: pip3
     - name: Generate new root password
       command: openssl rand -hex 7 creates=/root/.my.cnf
       register: mysql_new_root_pass
@@ -34,13 +43,13 @@
         msg: "No change to root password"
       when: not mysql_new_root_pass.changed
     - name: Remove anonymous users
-      mysql_user: name="" state=absent
+      community.mysql.mysql_user: name="" state=absent
       when: mysql_new_root_pass.changed
     - name: Remove test database
-      mysql_db: name=test state=absent
+      community.mysql.mysql_db: name=test state=absent
       when: mysql_new_root_pass.changed
     - name: Update root password
-      mysql_user: 
+      community.mysql.mysql_user: 
         name: root 
         host: |
           "{{ ansible_hostname }}",
